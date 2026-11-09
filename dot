@@ -61,7 +61,9 @@ ${C_BOLD}Usage:${C_RESET} dot [command] [args] [-n|--dry-run] [-y|--yes] [-v|--v
   ${C_CYAN}link${C_RESET} / ${C_CYAN}unlink${C_RESET} [modules]  only (un)link whole modules' configs, no packages
   ${C_CYAN}update${C_RESET}               git pull, refresh copied configs, re-apply the selection
   ${C_CYAN}refresh${C_RESET}              re-copy configs the repo changed (keeps ones you edited here)
+  ${C_CYAN}init${C_RESET} [dir]           start a new dotfiles repo (default ~/dotfiles)
   ${C_CYAN}repo${C_RESET} [path]          show / set which dotfiles repo dot uses
+  ${C_CYAN}check${C_RESET}                validate the dotfiles repo (modules, presets, links)
   ${C_CYAN}self-update${C_RESET}          reinstall the latest dot tool
   ${C_CYAN}doctor${C_RESET}               check the environment
 
@@ -89,6 +91,7 @@ main() {
   case $cmd in # commands that work without a dotfiles repo
     help) usage; return ;;
     repo) cmd_repo "$@"; return ;;
+    init) cmd_init "$@"; return ;;
     self-update) cmd_self_update; return ;;
     doctor) cmd_doctor; return ;;
   esac
@@ -109,6 +112,7 @@ main() {
     configs | cfg) cmd_configs "$@" ;;
     omarchy | om) cmd_omarchy "$@" ;;
     sync) cmd_sync "$@" ;;
+    check) cmd_check ;;
     link) cmd_link "$@" ;;
     unlink) cmd_unlink "$@" ;;
     update | up) cmd_update ;;

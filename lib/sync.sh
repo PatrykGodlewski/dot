@@ -7,18 +7,18 @@
 #   newconfig  <~/path>            an untracked config -> capture into a module
 # Nothing here modifies anything; cmd/sync.sh shows, picks and applies.
 
-SYNC_IGNORE="$DOT_ROOT/sync.ignore"
+SYNC_IGNORE="$DOT_ROOT/sync.ignore"                     # yours
+SYNC_IGNORE_DEFAULTS="$DOT_HOME/templates/sync-defaults.ignore" # built in
 SYNC_MAX_NEW_KB=${SYNC_MAX_NEW_KB:-2048} # bigger untracked dirs are app data, not config
 
-# sync_ignored <kind> <name>: matches a "<kind> <glob>" line in sync.ignore
+# sync_ignored <kind> <name>: matches a "<kind> <glob>" line in either ignore file
 sync_ignored() {
-  [[ -f $SYNC_IGNORE ]] || return 1
   local kind pat
   while read -r kind pat; do
     [[ $kind == "$1" && -n $pat ]] || continue
     # shellcheck disable=SC2053
     [[ $2 == $pat ]] && return 0
-  done < <(sed -e 's/[[:space:]]*#.*$//' -e '/^[[:space:]]*$/d' "$SYNC_IGNORE")
+  done < <(cat "$SYNC_IGNORE_DEFAULTS" "$SYNC_IGNORE" 2>/dev/null | sed -e 's/[[:space:]]*#.*$//' -e '/^[[:space:]]*$/d')
   return 1
 }
 

@@ -13,25 +13,8 @@ cmd_update() {
   exec "$DOT_SELF" refresh --then-apply "${flags[@]}"
 }
 
-# dot repo [path]: show which dotfiles repo is used, or remember one
-cmd_repo() {
-  local path=${1:-} found
-  if [[ -z $path ]]; then
-    found=$(repo_find) || { repo_require; return 1; }
-    printf '%s\n' "${found%%$'\t'*}"
-    info "${found#*$'\t'}"
-    return 0
-  fi
-  path=$(realpath -m "${path/#\~/$HOME}")
-  is_dotfiles_repo "$path" || die "$(pretty "$path") is not a dotfiles repo (no modules/ inside)"
-  [[ $DOT_DRY == 1 ]] && { info "would remember $(pretty "$path")"; return 0; }
-  mkdir -p "$DOT_CONFIG_DIR"
-  printf '%s\n' "$path" >"$REPO_FILE"
-  ok "dot now uses $(pretty "$path")"
-}
-
 # dot self-update: fetch and reinstall the latest tool (your repo is untouched)
-DOT_INSTALL_URL=${DOT_INSTALL_URL:-https://raw.githubusercontent.com/PatrykGodlewski/dotfiles/main/install.sh}
+DOT_INSTALL_URL=${DOT_INSTALL_URL:-https://raw.githubusercontent.com/PatrykGodlewski/dot/main/install.sh}
 cmd_self_update() {
   if [[ $DOT_SELF != "$HOME/.local/bin/dot" ]]; then
     info "running from a checkout ($(pretty "$DOT_SELF")) — update it with git pull"

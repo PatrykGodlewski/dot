@@ -1,33 +1,51 @@
-# dotfiles
+# dot
 
-My configs and tools, managed by **`dot`**, a small interactive bash CLI.
-It installs packages and links configs on **Arch-based** distros (Arch, EndeavourOS, Manjaro…) and **Debian/Ubuntu-based** ones (incl. WSL).
+**dot** is a small interactive bash CLI that manages your dotfiles: it copies or links your configs, installs the apps they belong to, and records what you change on a machine back into your repo.
+It works on **Arch-based** distros (Arch, EndeavourOS, Manjaro, Omarchy, …) and **Debian/Ubuntu-based** ones (incl. WSL). On [Omarchy](https://omarchy.org) it also manages default apps, the theme, Omarchy's installers and preinstalls.
+
+dot is only the tool. Your configs live in **your own dotfiles repo**, which dot reads.
 
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/PatrykGodlewski/dotfiles/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/PatrykGodlewski/dot/main/install.sh | bash
 ```
 
-This installs only the `dot` tool: the command in `~/.local/bin/dot` and its files in `~/.local/share/dot/`. It also puts `~/.local/bin` at the **front** of PATH in `~/.bashrc` / `~/.zshrc`, because graphviz ships its own `/usr/bin/dot`.
-It doesn't clone anything, install packages or touch configs. Run it again, or `dot self-update`, to update the tool.
+This installs the command in `~/.local/bin/dot` and its files in `~/.local/share/dot/`. It also puts `~/.local/bin` at the **front** of PATH in `~/.bashrc` / `~/.zshrc`, because graphviz ships its own `/usr/bin/dot`.
+It doesn't clone anything, install packages or touch configs. Run it again, or `dot self-update`, to update dot.
 
-Your dotfiles (this repo's `modules/`, `presets/`, …) are separate. Clone them wherever you like:
+## Your dotfiles repo
+
+Start a new one, or use the one you have:
 
 ```bash
-git clone https://github.com/PatrykGodlewski/dotfiles ~/Projects/dotfiles
+dot init                 # creates ~/dotfiles (git repo, core module, preset, ignore file;
+                         #   on Omarchy also a profile with your current defaults)
+dot repo ~/my/dotfiles   # or point dot at an existing clone
 dot repo                 # shows which repo dot uses and why
-dot repo ~/somewhere     # or point it at another clone
+dot check                # validates it: modules, presets, conflicting paths
 ```
 
-dot looks in this order: `$DOTFILES_DIR`, the path set with `dot repo`, the checkout it runs from, the current directory, then `~/Projects/dotfiles`, `~/projects/dotfiles`, `~/dotfiles` and `~/.dotfiles`. Then:
+dot looks in this order: `$DOTFILES_DIR`, the path set with `dot repo`, the checkout it runs from, the current directory, then `~/dotfiles`, `~/.dotfiles`, `~/Projects/dotfiles`, `~/projects/dotfiles`.
+
+A dotfiles repo looks like this:
+
+```
+modules/<name>/module.sh    what to install (packages + optional hooks)
+modules/<name>/home/        files that mirror $HOME and get copied / linked
+modules/omarchy/profile     Omarchy commands (Omarchy only)
+presets/<name>              lists of modules; "@other" includes another preset
+sync.ignore                 what `dot sync` should never propose
+```
+
+Then:
 
 ```bash
 dot configs    # copy / link the configs you pick (no packages)
-dot            # menu: presets, modules, Omarchy, sync, …
+dot            # menu: configs, sync, Omarchy, presets, modules, …
 ```
 
-Without gum, `dot` uses plain prompts; `dot apply core` installs gum and base tools.
+Without gum, dot uses plain prompts; `dot bootstrap` installs your `core` module (gum and base tools).
 
 ## Copying configs to this machine
 
@@ -69,7 +87,7 @@ It finds:
 - preinstalled web apps / TUIs you removed
 - copied configs you edited, and **opt-in**: Omarchy configs you customized, small untracked configs, conflicts
 
-Sync only writes to the repo, never to the system. Things you don't pick can be added to `sync.ignore` so they stop coming back. Hardware and base-system packages are ignored by default.
+Sync only writes to the repo, never to the system. Things you don't pick can be added to your `sync.ignore` so they stop coming back. dot also has built-in ignores for hardware and base-system packages and for app data such as browser profiles.
 
 ## Omarchy
 
@@ -140,18 +158,11 @@ git add modules/starship && git commit
 dot                 entry point: flags, help, command dispatch
                     (installed as ~/.local/bin/dot, files in ~/.local/share/dot)
 cmd/                one file per command group (defines cmd_*)
-lib/                reusable logic: repo (where the tool / your dotfiles are), os, ui,
-                    managers, state, links, modules,
-                    profile (Omarchy profile file), omarchy (adapters), sync
-install.sh          installs the dot tool (downloads lib/ cmd/ managers/ templates/)
+lib/                reusable logic: repo (finding / checking your dotfiles), os, ui,
+                    managers, state, links, modules, profile, omarchy, sync
 managers/           package managers: pacman apt aur cargo flatpak services
-modules/<name>/
-  module.sh         what to install (packages + optional hooks)
-  home/             files that mirror $HOME and get copied / linked
-modules/omarchy/profile   Omarchy commands (see above)
-presets/            module lists; "@other" includes another preset
-sync.ignore         what `dot sync` never proposes
-templates/          what `dot new` copies
+templates/          module.sh for `dot new`, repo/ for `dot init`, built-in sync ignores
+install.sh          installs dot
 tests/              test suite (tests/run.sh)
 ```
 
@@ -185,7 +196,7 @@ setup() {                               # Ubuntu: latest GitHub release binary
 | `configure` | after linking, on every apply; must be idempotent |
 | `teardown` | on `dot remove` |
 
-`module.sh` is plain bash, so you can branch on `$OS_FAMILY` (`arch`/`debian`), `$OS_ID` or `$OS_WSL`. The `discord` module does that to use flatpak outside Arch.
+`module.sh` is plain bash, so you can branch on `$OS_FAMILY` (`arch`/`debian`), `$OS_ID` or `$OS_WSL`. For example, use flatpak only outside Arch.
 
 ### Linking rules
 
@@ -195,7 +206,7 @@ An existing file at the target is moved to `~/.local/state/dotfiles/backups/<tim
 
 ### Machine state (not in git)
 
-- `~/.config/dotfiles/repo`: the dotfiles repo set with `dot repo`
+- `~/.config/dotfiles/repo`: the dotfiles repo set with `dot repo` / `dot init`
 - `~/.config/dotfiles/selected`: modules chosen on this machine
 - `~/.config/dotfiles/secrets.env`: API keys (from `modules/secrets`, sourced by zsh)
 - `~/.local/state/dotfiles/copies`: configs dot copied here, with a content hash
@@ -220,6 +231,8 @@ What's covered:
 - **CLI:** apply, plan, dry-run, remove, prune, adopt, new, status, configs, refresh
 - **Omarchy + sync:** profile parsing (never evaluated), status/apply/add/remove, catalog parsing, recording defaults / packages / apps, config write-back, conflicts, ignores
 - **Interactive flows:** pickers and confirmations driven through plain prompts (`DOT_FORCE_TTY=1`)
-- **Repo integrity:** every module loads on both distros, presets reference real modules, managers implement the interface, no two modules link the same path
+- **Tool integrity:** all scripts parse, managers implement the interface, the installer can't run half-downloaded
+- **init / check:** new repos are valid; broken modules, presets and conflicting paths are reported
+- **Install:** standalone install from a directory or tarball, finding the dotfiles repo
 
 Write new tests in `tests/test_*.sh` as `test_<name>()` functions. The helpers (`mkmod`, `mkhome`, `dotx`, `assert_*`) are in `tests/lib.sh`.

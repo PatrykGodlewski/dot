@@ -1,0 +1,2 @@
+# Things `dot sync` should never propose, on top of dot's built-in list.
+# One "<kind> <glob>" per line; kinds: pkg (packages), app (preinstalled web apps / TUIs), config (~/.config entries)

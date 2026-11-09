@@ -1,0 +1,4 @@
+# Omarchy profile: one `omarchy` command per line (the leading "omarchy" is optional).
+# `dot omarchy add` picks from Omarchy's own catalog; `dot omarchy apply` runs
+# chosen lines; `dot sync` records changes you make through the Omarchy menu.
+# Quote arguments that contain spaces. See `omarchy commands`.

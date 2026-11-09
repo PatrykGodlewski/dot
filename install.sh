@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Install the `dot` tool — nothing else (no clone, no packages, no configs):
 #
-#   curl -fsSL https://raw.githubusercontent.com/PatrykGodlewski/dotfiles/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/PatrykGodlewski/dot/main/install.sh | bash
 #
 #   ~/.local/bin/dot          the command
 #   ~/.local/share/dot/       its files (lib/ cmd/ managers/ templates/)
 #
-# Your dotfiles repo is separate: clone it wherever you like; dot finds
-# ~/Projects/dotfiles (and a few other places) itself, or run `dot repo <path>`.
+# Your dotfiles are separate: `dot init` starts a new repo, or clone yours
+# (dot finds ~/dotfiles and a few other places itself, or run `dot repo <path>`).
 # Running this again updates the tool (same as `dot self-update`).
 #
 # Env: DOT_REF=<branch|tag> (default main)
@@ -18,7 +18,7 @@
 main() {
   set -euo pipefail
   local ref=${DOT_REF:-main} src=${DOT_SOURCE:-}
-  local url="https://github.com/PatrykGodlewski/dotfiles/archive/refs/heads/$ref.tar.gz"
+  local url="https://github.com/PatrykGodlewski/dot/archive/refs/heads/$ref.tar.gz"
   local bin="$HOME/.local/bin" share="${XDG_DATA_HOME:-$HOME/.local/share}/dot"
   local tmp part
   fail() { printf 'error: %s\n' "$*" >&2; exit 1; }
