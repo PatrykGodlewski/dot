@@ -18,6 +18,8 @@ om_setup() {
   cat >"$S/catalog.json" <<'J'
 {"ok":true,"commands":[
  {"route":"omarchy default browser","args":"[chromium|firefox]","summary":"Set the browser","hidden":false},
+ {"route":"omarchy default terminal","args":"[alacritty|ghostty]","summary":"Set the terminal","hidden":false},
+ {"route":"omarchy default editor","args":"[nvim|zed]","summary":"Set the editor","hidden":false},
  {"route":"omarchy install dev-env","args":"<node|go>","summary":"Dev env","hidden":false},
  {"route":"omarchy install service tailscale","args":"","summary":"Tailscale","hidden":false},
  {"route":"omarchy install app","args":"<display-name> <packages>","summary":"free-form","hidden":false},
@@ -222,7 +224,7 @@ P
 test_omarchy_catalog_expands_choices_and_skips_free_form() {
   om_setup
   load_libs
-  assert_eq $'default browser chromium\ndefault browser firefox\ninstall dev-env node\ninstall dev-env go\ninstall service tailscale\ninstall dictation voxtype\nremove dev env node\nremove dev env go' \
+  assert_eq $'default browser chromium\ndefault browser firefox\ndefault terminal alacritty\ndefault terminal ghostty\ndefault editor nvim\ndefault editor zed\ninstall dev-env node\ninstall dev-env go\ninstall service tailscale\ninstall dictation voxtype\nremove dev env node\nremove dev env go' \
     "$(om_catalog | cut -f1)"
 }
 
@@ -465,4 +467,13 @@ test_sync_can_ignore_unpicked_changes() {
   assert_line "$R/sync.ignore" "config junk"
   dotx sync --yes; assert_ok
   assert_contains "$OUT" "Nothing to sync"
+}
+
+test_sync_skips_defaults_omarchy_cannot_set() {
+  om_setup
+  profile <<<'default browser chromium'
+  echo helium.desktop >"$T/om/default-browser" # set outside Omarchy, e.g. by a module
+  dotx sync --omarchy --yes; assert_ok
+  assert_not_contains "$(cat "$R/modules/omarchy/profile")" "helium"
+  assert_line "$R/modules/omarchy/profile" "default browser chromium"
 }

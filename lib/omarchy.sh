@@ -26,10 +26,15 @@ om_default() {
 }
 
 # om_state -> the machine's current defaults / theme / font as profile commands
+# Defaults Omarchy itself can't set (e.g. a browser it doesn't list, which the
+# getter reports as "helium.desktop") are left out: `omarchy default` would
+# reject them. Set those from a module instead.
 om_state() {
-  local k v
+  local k v settable
+  settable=$(om_catalog 2>/dev/null | cut -f1)
   for k in "${OM_DEFAULT_KINDS[@]}"; do
-    v=$(om_default "$k") && [[ -n $v ]] && profile_join default "$k" "$v"
+    v=$(om_default "$k") && [[ -n $v ]] || continue
+    grep -qxF "default $k $v" <<<"$settable" && profile_join default "$k" "$v"
   done
   v=$(omarchy theme current 2>/dev/null) && [[ -n $v ]] && profile_join theme set "$v"
   v=$(omarchy font current 2>/dev/null) && [[ -n $v ]] && profile_join font set "$v"
