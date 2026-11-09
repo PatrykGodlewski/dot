@@ -406,3 +406,14 @@ test_check_flags_setup_without_is_installed() {
   dotx check; assert_rc_fail
   assert_contains "$OUT" "a has setup() but no is_installed()"
 }
+
+test_remove_forgets_modules_deleted_from_repo() {
+  mkmod a <<<'DESC=a'
+  printf 'a\ngone\n' >"$SEL"
+  fake_cmd gum <<<'echo "gum version 0.0.0"'
+  dotx doctor; assert_contains "$OUT" "no longer in the repo: gone"
+  dotx remove gone --yes; assert_ok
+  assert_contains "$OUT" "removed from the selection"
+  assert_no_line "$SEL" gone
+  assert_line "$SEL" a
+}

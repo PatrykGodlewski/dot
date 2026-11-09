@@ -184,7 +184,12 @@ do_remove() { # unlink + teardown + deselect
   local n
   local -a removed=()
   for n in "$@"; do
-    mod_exists "$n" || { warn "unknown module: $n"; continue; }
+    if ! mod_exists "$n"; then
+      # renamed or deleted in the repo: just forget it was selected
+      if sel_has "$n"; then removed+=("$n"); info "$n no longer exists — removed from the selection"
+      else warn "unknown module: $n"; fi
+      continue
+    fi
     mod_load "$n"
     [[ $REQUIRED == 1 ]] && { warn "$n is required, not removing"; continue; }
     header "remove $n"

@@ -83,6 +83,10 @@ cmd_doctor() {
     ok "no broken links into the repo"
   fi
   info "selected: $(sel_get | tr '\n' ' ')"
+  local gone=() n
+  for n in $(sel_get); do mod_exists "$n" || gone+=("$n"); done
+  ((${#gone[@]})) && warn "selected but no longer in the repo: ${gone[*]} — forget them with: dot remove ${gone[*]}"
+  return 0
 }
 
 cmd_menu() {
