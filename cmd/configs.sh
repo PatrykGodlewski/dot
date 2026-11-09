@@ -42,9 +42,9 @@ cmd_configs() {
       mode=$(ui_choose_one "Configs:" \
         "copy"$'\t'"put real copies here (run again later to update them)" \
         "link"$'\t'"symlink into the repo (git pull updates them; edits land in the repo)" \
-        "remove"$'\t'"remove configs dot put here (backed up first)") || { info "Cancelled."; return 1; }
+        "remove"$'\t'"remove configs (backed up first)") || { info "Cancelled."; return 1; }
     else
-      mode=link
+      mode=$(config_mode) # this machine's choice from `dot setup` (default: link)
     fi
   fi
 

@@ -61,6 +61,8 @@ ${C_BOLD}Usage:${C_RESET} dot [command] [args] [-n|--dry-run] [-y|--yes] [-v|--v
   ${C_CYAN}link${C_RESET} / ${C_CYAN}unlink${C_RESET} [modules]  only (un)link whole modules' configs, no packages
   ${C_CYAN}update${C_RESET}               git pull, refresh copied configs, re-apply the selection
   ${C_CYAN}refresh${C_RESET}              re-copy configs the repo changed (keeps ones you edited here)
+  ${C_CYAN}setup${C_RESET}                guided first run: copy or link, apps, configs, Omarchy
+  ${C_CYAN}clone${C_RESET} <url> [dir]    clone a dotfiles repo and use it
   ${C_CYAN}init${C_RESET} [dir]           start a new dotfiles repo (default ~/dotfiles)
   ${C_CYAN}repo${C_RESET} [path]          show / set which dotfiles repo dot uses
   ${C_CYAN}check${C_RESET}                validate the dotfiles repo (modules, presets, links)
@@ -92,6 +94,7 @@ main() {
     help) usage; return ;;
     repo) cmd_repo "$@"; return ;;
     init) cmd_init "$@"; return ;;
+    clone) cmd_clone "$@"; return ;;
     self-update) cmd_self_update; return ;;
     doctor) cmd_doctor; return ;;
   esac
@@ -113,6 +116,7 @@ main() {
     omarchy | om) cmd_omarchy "$@" ;;
     sync) cmd_sync "$@" ;;
     check) cmd_check ;;
+    setup) cmd_setup ;;
     link) cmd_link "$@" ;;
     unlink) cmd_unlink "$@" ;;
     update | up) cmd_update ;;

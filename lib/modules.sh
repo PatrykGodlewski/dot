@@ -173,15 +173,21 @@ mod_plan() {
       fi
     fi
   fi
+  local verb; verb=$(config_mode)
   while IFS=$'\t' read -r src dst; do
     [[ -z $src ]] && continue
     st=$(link_state "$src" "$dst")
+    if config_in_place "$st"; then
+      printf '    %-9s %s %s%s%s\n' "$verb" "$(_sym '=')" "$C_DIM" "$(pretty "$dst")" "$C_RESET"
+      continue
+    fi
+    ((changes++))
     case $st in
-      ok) printf '    %-9s %s %s%s%s\n' link "$(_sym '=')" "$C_DIM" "$(pretty "$dst")" "$C_RESET" ;;
-      missing) printf '    %-9s %s %s\n' link "$(_sym +)" "$(pretty "$dst")"; ((changes++)) ;;
-      same) printf '    %-9s %s %s %s(identical copy → replace with link)%s\n' link "$(_sym +)" "$(pretty "$dst")" "$C_DIM" "$C_RESET"; ((changes++)) ;;
-      conflict) printf '    %-9s %s %s %s(exists, differs → backed up)%s\n' link "$(_sym '!')" "$(pretty "$dst")" "$C_YELLOW" "$C_RESET"; ((changes++)) ;;
-      foreign) printf '    %-9s %s %s %s(symlink to %s → backed up)%s\n' link "$(_sym '!')" "$(pretty "$dst")" "$C_YELLOW" "$(pretty "$(readlink "$dst")")" "$C_RESET"; ((changes++)) ;;
+      missing) printf '    %-9s %s %s\n' "$verb" "$(_sym +)" "$(pretty "$dst")" ;;
+      same) printf '    %-9s %s %s %s(identical copy → replace with link)%s\n' "$verb" "$(_sym +)" "$(pretty "$dst")" "$C_DIM" "$C_RESET" ;;
+      ok) printf '    %-9s %s %s %s(link → replace with copy)%s\n' "$verb" "$(_sym +)" "$(pretty "$dst")" "$C_DIM" "$C_RESET" ;;
+      conflict) printf '    %-9s %s %s %s(exists, differs → backed up)%s\n' "$verb" "$(_sym '!')" "$(pretty "$dst")" "$C_YELLOW" "$C_RESET" ;;
+      foreign) printf '    %-9s %s %s %s(symlink to %s → backed up)%s\n' "$verb" "$(_sym '!')" "$(pretty "$dst")" "$C_YELLOW" "$(pretty "$(readlink "$dst")")" "$C_RESET" ;;
     esac
   done < <(links_of "$name")
   if mod_has_hook configure; then
@@ -230,9 +236,9 @@ mod_apply() {
     fi
     while IFS=$'\t' read -r src dst; do
       [[ -z $src ]] && continue
-      if [[ $(link_state "$src" "$dst") == ok ]]; then continue; fi
-      link_apply "$src" "$dst" || { err "link failed: $(pretty "$dst")"; exit 1; }
-      ok "linked $(pretty "$dst")"
+      config_in_place "$(link_state "$src" "$dst")" && continue
+      config_put "$name" "$src" "$dst" || { err "$(config_mode) failed: $(pretty "$dst")"; exit 1; }
+      ok "$([[ $(config_mode) == copy ]] && echo copied || echo linked) $(pretty "$dst")"
     done < <(links_of "$name")
     if mod_has_hook configure; then
       if [[ $DOT_DRY == 1 ]]; then
@@ -246,16 +252,15 @@ mod_apply() {
   )
 }
 
-# Remove: unlink configs + teardown hook (packages handled by prune).
+# Remove: take away the configs dot put there (links / recorded copies) +
+# teardown hook (packages are handled by prune).
 mod_unlink() {
   (
     local name=$1 src dst
     mod_load "$name"
     while IFS=$'\t' read -r src dst; do
       [[ -z $src ]] && continue
-      if [[ $(link_state "$src" "$dst") == ok ]]; then
-        link_remove "$src" "$dst" && ok "unlinked $(pretty "$dst")"
-      fi
+      config_take "$src" "$dst" && ok "removed $(pretty "$dst")"
     done < <(links_of "$name")
   )
 }
@@ -300,7 +305,7 @@ mod_status() {
     [[ -z $src ]] && continue
     ((l_total++))
     st=$(link_state "$src" "$dst")
-    [[ $st == ok ]] && ((l_ok++))
+    config_in_place "$st" && ((l_ok++))
     [[ $st == conflict || $st == foreign ]] && ((l_bad++))
   done < <(links_of "$name")
   printf '%s\n' "ok|$pk_ok|$pk_total|$setup|$l_ok|$l_total|$l_bad"

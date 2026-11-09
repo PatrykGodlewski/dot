@@ -22,6 +22,25 @@ _repo_remember() {
   ok "dot now uses $(pretty "$1")"
 }
 
+# dot clone <git-url> [dir]: clone a dotfiles repo (default ~/<repo name>) and use it
+cmd_clone() {
+  local url=${1:-} dir=${2:-}
+  [[ -n $url ]] || die "usage: dot clone <git-url> [dir]"
+  [[ -n $dir ]] || { dir=${url%/}; dir=${dir%.git}; dir=$HOME/${dir##*/}; }
+  dir=$(realpath -m "${dir/#\~/$HOME}")
+  if is_dotfiles_repo "$dir"; then
+    info "$(pretty "$dir") is already a dotfiles repo — using it as is"
+  elif [[ -e $dir ]] && [[ -n $(ls -A "$dir" 2>/dev/null) ]]; then
+    die "$(pretty "$dir") already exists and isn't a dotfiles repo"
+  else
+    has git || die "git is needed: sudo pacman -S git  (or: sudo apt install git)"
+    run git clone "$url" "$dir" || die "git clone failed: $url"
+    [[ $DOT_DRY == 1 ]] && return 0
+    is_dotfiles_repo "$dir" || die "cloned $url, but it has no modules/ — not a dotfiles repo"
+  fi
+  _repo_remember "$dir"
+}
+
 # dot init [dir]: start a new dotfiles repo (default ~/dotfiles) and use it
 cmd_init() {
   local dir=${1:-$HOME/dotfiles}

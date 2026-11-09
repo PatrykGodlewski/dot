@@ -14,6 +14,20 @@ curl -fsSL https://raw.githubusercontent.com/PatrykGodlewski/dot/main/install.sh
 This installs the command in `~/.local/bin/dot` and its files in `~/.local/share/dot/`. It also puts `~/.local/bin` at the **front** of PATH in `~/.bashrc` / `~/.zshrc`, because graphviz ships its own `/usr/bin/dot`.
 It doesn't clone anything, install packages or touch configs. Run it again, or `dot self-update`, to update dot.
 
+### Install dot and your dotfiles in one go
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/PatrykGodlewski/dot/main/install.sh | bash -s -- --repo <your-dotfiles-git-url>
+```
+
+This installs dot, clones your repo (to `~/<repo name>`, or `--dir <path>`) and starts **`dot setup`**:
+1. **copy or link**: how configs are put on this machine (remembered: `apply` uses it too)
+2. **apps**: pick modules to install, each with its configs
+3. **more configs**: pick configs without installing their apps
+4. **Omarchy profile** (on Omarchy): pick profile lines to run
+
+Each step lets you pick nothing, and asks before it changes anything. Put this command in your dotfiles README.
+
 ## Your dotfiles repo
 
 Start a new one, or use the one you have:
@@ -21,7 +35,8 @@ Start a new one, or use the one you have:
 ```bash
 dot init                 # creates ~/dotfiles (git repo, core module, preset, ignore file;
                          #   on Omarchy also a profile with your current defaults)
-dot repo ~/my/dotfiles   # or point dot at an existing clone
+dot clone <git-url> [dir]  # or clone yours (default ~/<repo name>) and use it
+dot repo ~/my/dotfiles   # or point dot at a clone you already have
 dot repo                 # shows which repo dot uses and why
 dot check                # validates it: modules, presets, conflicting paths
 ```

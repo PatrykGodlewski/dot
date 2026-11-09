@@ -117,3 +117,48 @@ config_label() {
     *:foreign) echo "other symlink → backup + replace" ;;
   esac
 }
+
+# ---------------------------------------------------------------- config mode
+# How module configs are put in place on this machine: link (default) or copy.
+# Chosen in `dot setup`, stored in $DOT_CONFIG_DIR/config-mode.
+CONFIG_MODE_FILE="$DOT_CONFIG_DIR/config-mode"
+
+config_mode() {
+  local m=''
+  [[ -f $CONFIG_MODE_FILE ]] && read -r m <"$CONFIG_MODE_FILE"
+  [[ $m == copy ]] && echo copy || echo link
+}
+
+config_mode_set() {
+  [[ $1 == link || $1 == copy ]] || return 1
+  [[ $DOT_DRY == 1 ]] && return 0
+  mkdir -p "$DOT_CONFIG_DIR"
+  echo "$1" >"$CONFIG_MODE_FILE"
+}
+
+# config_in_place <state>: nothing to do for this link_state in the current mode
+config_in_place() {
+  case $(config_mode):$1 in link:ok | copy:same) return 0 ;; *) return 1 ;; esac
+}
+
+# config_put <module> <src> <dst>: link or copy, per config_mode
+config_put() {
+  if [[ $(config_mode) == copy ]]; then
+    copy_apply "$2" "$3" && copy_rec_add "$1" "$3"
+  else
+    link_apply "$2" "$3" && copy_rec_del "$3"
+  fi
+}
+
+# config_take <src> <dst>: remove what dot put there (our link, or a recorded
+# copy, which is backed up first); anything else is left alone
+config_take() {
+  local st; st=$(link_state "$1" "$2")
+  if [[ $st == ok ]]; then
+    link_remove "$1" "$2"
+  elif [[ -e $2 && ! -L $2 ]] && copy_rec_list | cut -f2 | grep -qxF "$2"; then
+    _backup "$2" && copy_rec_del "$2"
+  else
+    return 1
+  fi
+}
