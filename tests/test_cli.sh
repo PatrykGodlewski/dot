@@ -384,3 +384,25 @@ test_menu_returns_without_asking_and_survives_failures() {
   assert_contains "$OUT" "Nothing to do"
   assert_eq 2 "$(grep -c '^dot — ' <<<"$OUT")" "menu shown again right after the command"
 }
+
+test_is_installed_with_grep_q_pipeline_counts_as_installed() {
+  # grep -q quits early; under pipefail the writer's SIGPIPE used to make
+  # this look "not installed", so setup ran on every apply
+  mkmod a <<'M'
+DESC=a
+is_installed() { seq 1 100000 | grep -q 5; }
+setup() { touch "$HOME/setup-ran"; }
+M
+  dotx plan a; assert_ok
+  assert_contains "$OUT" "already done"
+  dotx apply a --yes; assert_ok
+  assert_no_file "$HOME/setup-ran"
+  dotx status; assert_contains "$OUT" "ready"
+}
+
+test_check_flags_setup_without_is_installed() {
+  mkmod core <<<'DESC=core; REQUIRED=1'
+  mkmod a <<<'DESC=a; setup() { :; }'
+  dotx check; assert_rc_fail
+  assert_contains "$OUT" "a has setup() but no is_installed()"
+}

@@ -60,6 +60,8 @@ repo_check() {
         mod_load "$m" 2>/dev/null
         [[ -n $DESC ]] || echo "$m has no DESC"
         for d in "${DEPENDS[@]}"; do mod_exists "$d" || echo "$m depends on missing module $d"; done
+        mod_has_hook setup && ! mod_has_hook is_installed &&
+          echo "$m has setup() but no is_installed(): setup would run on every apply"
       done
     )
   done | awk '!seen[$0]++'

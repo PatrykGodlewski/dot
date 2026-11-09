@@ -41,6 +41,13 @@ mod_load() {
 
 mod_has_hook() { [[ $(type -t "$1") == function ]]; }
 
+# Is the loaded module's custom part already on the system? Runs is_installed
+# without pipefail: checks like `fc-list | grep -q x` would otherwise fail
+# (grep -q quits early, the writer gets SIGPIPE) and setup would run again.
+mod_is_installed() {
+  mod_has_hook is_installed && (set +o pipefail; is_installed) >/dev/null 2>&1
+}
+
 # Why is the loaded module unsupported here? Prints reason, returns 1 if unsupported.
 mod_supported() {
   local t
@@ -158,7 +165,7 @@ mod_plan() {
     printf '    %-9s%s\n' "$m" "$line"
   done
   if mod_has_hook setup; then
-    if mod_has_hook is_installed && (is_installed) >/dev/null 2>&1; then
+    if mod_is_installed; then
       printf '    %-9s %s %salready done%s\n' setup "$(_sym '=')" "$C_DIM" "$C_RESET"
     elif ((changes)) && mod_has_hook is_installed; then
       printf '    %-9s %s run setup() %sonly if still missing after the packages above%s\n' setup "$(_sym +)" "$C_DIM" "$C_RESET"
@@ -224,7 +231,7 @@ mod_apply() {
       for p in "${missing[@]}"; do rec_add "$name" "$m" "$p"; done
     done
     if mod_has_hook setup; then
-      if mod_has_hook is_installed && (is_installed) >/dev/null 2>&1; then
+      if mod_is_installed; then
         ok "setup: already done"
       elif [[ $DOT_DRY == 1 ]]; then
         printf '  %s[dry]%s setup()  (see: dot plan -v %s)\n' "$C_DIM" "$C_RESET" "$name"
@@ -297,7 +304,7 @@ mod_status() {
     done < <(mod_pkgs "$m")
   done
   if mod_has_hook is_installed; then
-    if (is_installed) >/dev/null 2>&1; then setup=yes; else setup=no; fi
+    if mod_is_installed; then setup=yes; else setup=no; fi
   elif mod_has_hook setup; then
     setup='?'
   fi
