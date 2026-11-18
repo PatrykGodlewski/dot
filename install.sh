@@ -29,11 +29,12 @@ main() {
   local bin="$HOME/.local/bin" share="${XDG_DATA_HOME:-$HOME/.local/share}/dot"
   local tmp part repo='' dir='' projects=''
   fail() { printf 'error: %s\n' "$*" >&2; exit 1; }
+  need_value() { [[ -n ${2:-} ]] || fail "$1 needs a value"; } # need_value "$@" inside the option loop
   while (($#)); do
     case $1 in
-      --repo) repo=${2:-}; shift ;;
-      --dir) dir=${2:-}; shift ;;
-      --projects) projects=${2:-}; shift ;;
+      --repo) need_value "$@"; repo=$2; shift ;;
+      --dir) need_value "$@"; dir=$2; shift ;;
+      --projects) need_value "$@"; projects=$2; shift ;;
       *) fail "unknown option: $1 (use: --repo <git-url> [--dir <path>] [--projects <path>])" ;;
     esac
     shift

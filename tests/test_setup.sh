@@ -151,3 +151,9 @@ test_menu_search_by_text() {
   doti $'folder\n~/code\nquit' menu; assert_ok   # "folder" finds projects; "quit" by name
   assert_line "$HOME/.config/dotfiles/env.sh" "export DOTS_PROJECT_ROOT='$HOME/code'"
 }
+
+test_install_options_need_values() {
+  OUT=$(DOT_SOURCE=$REPO bash "$REPO/install.sh" --projects 2>&1); RC=$?
+  assert_rc_fail
+  assert_contains "$OUT" "--projects needs a value"
+}

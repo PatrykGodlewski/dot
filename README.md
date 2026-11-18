@@ -49,7 +49,7 @@ dot looks in this order: `$DOTFILES_DIR`, the path set with `dot repo`, the chec
 Scripts in your dotfiles (a tmux sessionizer, editor pickers, …) shouldn't hardcode `~/Projects` or `~/projects`. dot keeps the folder as one setting per machine:
 
 ```bash
-dot projects             # shows it (default: an existing ~/Projects or ~/projects)
+dot projects             # shows it (default: an existing ~/projects or ~/Projects)
 dot projects ~/code      # sets it (and creates the folder when missing)
 ```
 

@@ -18,6 +18,8 @@ source "$DOT_HOME/lib/repo.sh"
 DOT_ROOT=$(repo_find | cut -f1) # your dotfiles repo; empty when not found
 export DOT_ROOT
 # shellcheck disable=SC1091
+source "$DOT_HOME/lib/env.sh"
+# shellcheck disable=SC1091
 source "$DOT_HOME/lib/projects.sh"
 DOTS_PROJECT_ROOT=$(projects_root) # your projects folder, for module hooks
 export DOTS_PROJECT_ROOT

@@ -232,3 +232,19 @@ EOF2
   assert_eq b "$(ui_choose_one H $'a\tA' $'b\tB')"
   assert_eq $'filter\nchoose' "$(cat "$T/gum-cmds")" "filter for long lists, choose for short"
 }
+
+test_env_store_set_get_replace_and_quote() {
+  load_libs
+  assert_eq "" "$(env_get FOO)" "unset"
+  env_set FOO "it's here"
+  env_set BAR two
+  env_set FOO again
+  assert_eq again "$(env_get FOO)"
+  assert_eq two "$(env_get BAR)"
+  assert_eq 1 "$(grep -c '^export FOO=' "$DOT_ENV_FILE")" "replaced, not appended"
+  env_set Q "a'b c"
+  ( . "$DOT_ENV_FILE"; [[ $Q == "a'b c" ]] ) || _fail "quotes survive sh"
+  FOO=leak; assert_eq again "$(env_get FOO)" "the caller's environment doesn't leak in"
+  ( env_set 'bad-key' x ) 2>/dev/null && _fail "invalid key rejected"
+  return 0
+}

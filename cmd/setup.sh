@@ -11,10 +11,8 @@ cmd_setup() {
   ui_interactive || die "dot setup is interactive — without a terminal use: dot configs --copy|--link … / dot apply …"
   header "dot setup — $(pretty "$DOT_ROOT")"
 
-  local projects
   header "1/5  Projects folder — where your code lives (\$DOTS_PROJECT_ROOT)"
-  projects=$(ui_input "Projects folder" "$(pretty "$(projects_root)")") || { info "Cancelled."; return 1; }
-  [[ -n $projects ]] && projects_set "$projects"
+  projects_ask || { info "Cancelled."; return 1; }
 
   local mode
   mode=$(ui_choose_one "2/5  How should configs be put on this machine?" \

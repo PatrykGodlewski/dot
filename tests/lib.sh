@@ -104,7 +104,7 @@ doti() { local input=$1; shift; OUT=$(printf '%s\n' "$input" | DOT_FORCE_TTY=1 "
 load_libs() {
   export DOT_ROOT=$R DOT_HOME=$R DOT_SELF=$R/dot
   local f
-  for f in core repo os ui managers state links modules github profile omarchy sync; do
+  for f in core repo env projects os ui managers state links modules github profile omarchy sync; do
     # shellcheck disable=SC1090
     source "$R/lib/$f.sh"
   done

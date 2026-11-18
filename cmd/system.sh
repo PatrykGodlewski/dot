@@ -132,8 +132,7 @@ cmd_menu() {
         p=$(ui_input "Path to adopt (e.g. ~/.config/foo)")
         [[ -z $p ]] || cmd_adopt "${p/#\~/$HOME}"
       elif [[ $choice == projects ]]; then
-        p=$(ui_input "Projects folder" "$(pretty "$(projects_root)")")
-        [[ -z $p ]] || projects_set "$p"
+        projects_ask
       else
         "cmd_${choice//-/_}"
       fi
