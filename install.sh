@@ -11,7 +11,10 @@
 # Running this again updates the tool (same as `dot self-update`).
 #
 # Also set up your dotfiles in the same go (clones them, then runs `dot setup`):
-#   curl -fsSL .../install.sh | bash -s -- --repo <git-url> [--dir <path>]
+#   curl -fsSL .../install.sh | bash -s -- --repo <git-url> [--dir <path>] [--projects <path>]
+#
+# --projects <path> sets your projects folder ($DOTS_PROJECT_ROOT, see
+# `dot projects`); works with or without --repo.
 #
 # Env: DOT_REF=<branch|tag> (default main)
 #      DOT_SOURCE=<dir|tar.gz> install from a local copy instead of GitHub
@@ -24,13 +27,14 @@ main() {
   local ref=${DOT_REF:-main} src=${DOT_SOURCE:-}
   local url="https://github.com/PatrykGodlewski/dot/archive/refs/heads/$ref.tar.gz"
   local bin="$HOME/.local/bin" share="${XDG_DATA_HOME:-$HOME/.local/share}/dot"
-  local tmp part repo='' dir=''
+  local tmp part repo='' dir='' projects=''
   fail() { printf 'error: %s\n' "$*" >&2; exit 1; }
   while (($#)); do
     case $1 in
       --repo) repo=${2:-}; shift ;;
       --dir) dir=${2:-}; shift ;;
-      *) fail "unknown option: $1 (use: --repo <git-url> [--dir <path>])" ;;
+      --projects) projects=${2:-}; shift ;;
+      *) fail "unknown option: $1 (use: --repo <git-url> [--dir <path>] [--projects <path>])" ;;
     esac
     shift
   done
@@ -69,6 +73,10 @@ main() {
       "$marker" >>"$rc"
     echo "✓ ~/.local/bin added to the front of PATH in ${rc/#$HOME/\~}"
   done
+
+  if [[ -n $projects ]]; then
+    "$bin/dot" projects "$projects" </dev/null || exit 1
+  fi
 
   local stale=0
   [[ $(command -v dot 2>/dev/null) == "$bin/dot" ]] || stale=1

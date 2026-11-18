@@ -20,11 +20,12 @@ It doesn't clone anything, install packages or touch configs. Run it again, or `
 curl -fsSL https://raw.githubusercontent.com/PatrykGodlewski/dot/main/install.sh | bash -s -- --repo <your-dotfiles-git-url>
 ```
 
-This installs dot, clones your repo (to `~/<repo name>`, or `--dir <path>`) and starts **`dot setup`**:
-1. **copy or link**: how configs are put on this machine (remembered: `apply` uses it too)
-2. **apps**: pick modules to install, each with its configs
-3. **more configs**: pick configs without installing their apps
-4. **Omarchy profile** (on Omarchy): pick profile lines to run
+This installs dot, clones your repo (to `~/<repo name>`, or `--dir <path>`), saves your projects folder if you pass `--projects <path>`, and starts **`dot setup`**:
+1. **projects folder**: where your code lives, saved as `$DOTS_PROJECT_ROOT` (see below)
+2. **copy or link**: how configs are put on this machine (remembered: `apply` uses it too)
+3. **apps**: pick modules to install, each with its configs
+4. **more configs**: pick configs without installing their apps
+5. **Omarchy profile** (on Omarchy): pick profile lines to run
 
 Each step lets you pick nothing, and asks before it changes anything. Put this command in your dotfiles README.
 
@@ -42,6 +43,21 @@ dot check                # validates it: modules, presets, conflicting paths
 ```
 
 dot looks in this order: `$DOTFILES_DIR`, the path set with `dot repo`, the checkout it runs from, the current directory, then `~/dotfiles`, `~/.dotfiles`, `~/Projects/dotfiles`, `~/projects/dotfiles`.
+
+### Projects folder
+
+Scripts in your dotfiles (a tmux sessionizer, editor pickers, …) shouldn't hardcode `~/Projects` or `~/projects`. dot keeps the folder as one setting per machine:
+
+```bash
+dot projects             # shows it (default: an existing ~/Projects or ~/projects)
+dot projects ~/code      # sets it (and creates the folder when missing)
+```
+
+It is written to `~/.config/dotfiles/env.sh` as `export DOTS_PROJECT_ROOT='…'`. dot exports it to module hooks; source the file from your shell config so your scripts get it too:
+
+```sh
+[ -f "$HOME/.config/dotfiles/env.sh" ] && . "$HOME/.config/dotfiles/env.sh"
+```
 
 A dotfiles repo looks like this:
 
@@ -223,6 +239,7 @@ An existing file at the target is moved to `~/.local/state/dotfiles/backups/<tim
 
 - `~/.config/dotfiles/repo`: the dotfiles repo set with `dot repo` / `dot init`
 - `~/.config/dotfiles/selected`: modules chosen on this machine
+- `~/.config/dotfiles/env.sh`: machine settings for your shell, e.g. `DOTS_PROJECT_ROOT` (set with `dot projects`)
 - `~/.config/dotfiles/secrets.env`: API keys (from `modules/secrets`, sourced by zsh)
 - `~/.local/state/dotfiles/copies`: configs dot copied here, with a content hash
 - `~/.local/state/dotfiles/installed`: packages that **dot** installed. `prune` and `remove` only ever uninstall these, never packages that were already on the system.

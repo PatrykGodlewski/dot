@@ -1,5 +1,6 @@
 # shellcheck shell=bash
-# Your dotfiles repo: repo (show / set), init (start one), check (validate).
+# Your dotfiles repo: repo (show / set), init (start one), check (validate),
+# and projects (show / set the projects folder).
 
 # dot repo [path]: show which dotfiles repo is used, or remember one
 cmd_repo() {
@@ -13,6 +14,17 @@ cmd_repo() {
   path=$(realpath -m "${path/#\~/$HOME}")
   is_dotfiles_repo "$path" || die "$(pretty "$path") is not a dotfiles repo (no modules/ inside) — create one with: dot init $(pretty "$path")"
   _repo_remember "$path"
+}
+
+# dot projects [path]: show the projects folder, or set it ($DOTS_PROJECT_ROOT)
+cmd_projects() {
+  if [[ -z ${1:-} ]]; then
+    projects_root
+    if [[ -n $(projects_saved) ]]; then info "set in $(pretty "$DOT_ENV_FILE")"
+    else info "not set yet (default) — set it with: dot projects <path>"; fi
+    return 0
+  fi
+  projects_set "$1"
 }
 
 _repo_remember() {

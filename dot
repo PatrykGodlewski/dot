@@ -17,6 +17,10 @@ source "$DOT_HOME/lib/core.sh"
 source "$DOT_HOME/lib/repo.sh"
 DOT_ROOT=$(repo_find | cut -f1) # your dotfiles repo; empty when not found
 export DOT_ROOT
+# shellcheck disable=SC1091
+source "$DOT_HOME/lib/projects.sh"
+DOTS_PROJECT_ROOT=$(projects_root) # your projects folder, for module hooks
+export DOTS_PROJECT_ROOT
 
 # lib/ = reusable logic, cmd/ = one file per command group (defines cmd_*)
 for _f in os ui managers state links modules github profile omarchy sync; do
@@ -65,12 +69,13 @@ ${C_BOLD}Usage:${C_RESET} dot [command] [args] [-n|--dry-run] [-y|--yes] [-v|--v
   ${C_CYAN}clone${C_RESET} <url> [dir]    clone a dotfiles repo and use it
   ${C_CYAN}init${C_RESET} [dir]           start a new dotfiles repo (default ~/dotfiles)
   ${C_CYAN}repo${C_RESET} [path]          show / set which dotfiles repo dot uses
+  ${C_CYAN}projects${C_RESET} [path]      show / set the projects folder (\$DOTS_PROJECT_ROOT)
   ${C_CYAN}check${C_RESET}                validate the dotfiles repo (modules, presets, links)
   ${C_CYAN}self-update${C_RESET}          reinstall the latest dot tool
   ${C_CYAN}doctor${C_RESET}               check the environment
 
 Targets are module names or @preset (e.g. ${C_DIM}dot plan @desktop${C_RESET}).
-Repo: $(if [[ -n $DOT_ROOT ]]; then pretty "$DOT_ROOT"; else echo "none — see: dot repo"; fi)   OS: $(os_summary)
+Repo: $(if [[ -n $DOT_ROOT ]]; then pretty "$DOT_ROOT"; else echo "none — see: dot repo"; fi)   Projects: $(pretty "$DOTS_PROJECT_ROOT")   OS: $(os_summary)
 EOF
 }
 
@@ -93,6 +98,7 @@ main() {
   case $cmd in # commands that work without a dotfiles repo
     help) usage; return ;;
     repo) cmd_repo "$@"; return ;;
+    projects) cmd_projects "$@"; return ;;
     init) cmd_init "$@"; return ;;
     clone) cmd_clone "$@"; return ;;
     self-update) cmd_self_update; return ;;

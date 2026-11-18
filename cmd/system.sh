@@ -64,6 +64,8 @@ cmd_doctor() {
   else
     warn "no dotfiles repo found — clone one, or: dot repo <path>"
   fi
+  if [[ -n $(projects_saved) ]]; then ok "projects: $(pretty "$(projects_root)")  (DOTS_PROJECT_ROOT)"
+  else warn "projects folder not set — using $(pretty "$(projects_root)"); set it with: dot projects <path>"; fi
   if has sudo || [[ $EUID -eq 0 ]]; then ok "sudo available"; else err "sudo not found"; fi
   if has gum; then ok "gum $(gum --version 2>/dev/null | awk '{print $3}')"; else warn "gum missing — plain prompts are used (dot apply core)"; fi
   [[ ":$PATH:" == *":$HOME/.local/bin:"* ]] && ok "~/.local/bin in PATH"

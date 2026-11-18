@@ -1,17 +1,23 @@
 # shellcheck shell=bash
 # dot setup — guided first run on a machine:
-#   1. copy or link configs here (saved for this machine)
-#   2. apps to install (each module brings its configs)
-#   3. more configs, without their apps
-#   4. Omarchy profile (on Omarchy)
+#   1. projects folder ($DOTS_PROJECT_ROOT, saved for this machine)
+#   2. copy or link configs here (saved for this machine)
+#   3. apps to install (each module brings its configs)
+#   4. more configs, without their apps
+#   5. Omarchy profile (on Omarchy)
 # Every step can be skipped by choosing nothing; each asks before changing anything.
 
 cmd_setup() {
   ui_interactive || die "dot setup is interactive — without a terminal use: dot configs --copy|--link … / dot apply …"
   header "dot setup — $(pretty "$DOT_ROOT")"
 
+  local projects
+  header "1/5  Projects folder — where your code lives (\$DOTS_PROJECT_ROOT)"
+  projects=$(ui_input "Projects folder" "$(pretty "$(projects_root)")") || { info "Cancelled."; return 1; }
+  [[ -n $projects ]] && projects_set "$projects"
+
   local mode
-  mode=$(ui_choose_one "1/4  How should configs be put on this machine?" \
+  mode=$(ui_choose_one "2/5  How should configs be put on this machine?" \
     "copy"$'\t'"real copies — the repo can change without affecting this machine" \
     "link"$'\t'"symlinks into the repo — edits land in the repo, git pull updates them") ||
     { info "Cancelled."; return 1; }
@@ -19,12 +25,12 @@ cmd_setup() {
   local -A done_word=([copy]=copied [link]=linked)
   ok "configs will be ${done_word[$mode]} on this machine"
 
-  _setup_step "2/4  Apps — each comes with its configs (nothing chosen = skip)" \
+  _setup_step "3/5  Apps — each comes with its configs (nothing chosen = skip)" \
     pick_and_apply "$(sel_get | tr '\n' ' ')"
-  _setup_step "3/4  More configs, without their apps (nothing chosen = skip)" \
+  _setup_step "4/5  More configs, without their apps (nothing chosen = skip)" \
     cmd_configs "--$mode"
   if om_available && [[ -f $PROFILE_FILE ]]; then
-    _setup_step "4/4  Omarchy profile (nothing chosen = skip)" omarchy_apply
+    _setup_step "5/5  Omarchy profile (nothing chosen = skip)" omarchy_apply
   fi
 
   header "Done"

@@ -63,8 +63,8 @@ test_setup_copy_apps_then_configs() {
   mkhome a .config/a/cfg
   mkmod b <<<'DESC="app b"; PKGS=(y)'
   mkhome b .zshrc
-  # 1 copy · apps: tick a, accept, proceed · configs: tick the one left, accept, confirm
-  doti $'1\n1\n\ny\n1\n\ny' setup; assert_ok
+  # default projects · 1 copy · apps: tick a, accept, proceed · configs: tick the one left, accept, confirm
+  doti $'\n1\n1\n\ny\n1\n\ny' setup; assert_ok
   assert_line "$HOME/.config/dotfiles/config-mode" copy
   assert_line "$FAKE_DB" "pacman x"
   assert_no_line "$FAKE_DB" "pacman y"           # b's app wasn't picked …
@@ -78,11 +78,39 @@ test_setup_steps_can_be_skipped() {
   DOT_OMARCHY=0; export DOT_OMARCHY
   mkmod a <<<'DESC=a; PKGS=(x)'
   mkhome a .zshrc
-  doti $'2\n\n\n' setup; assert_ok               # link · pick no apps · pick no configs
+  doti $'\n2\n\n\n' setup; assert_ok             # default projects · link · no apps · no configs
   assert_line "$HOME/.config/dotfiles/config-mode" link
   assert_eq "" "$(cat "$FAKE_DB")"
   assert_no_file "$HOME/.zshrc"
   assert_contains "$OUT" "Done"
+}
+
+test_setup_sets_projects_folder() {
+  DOT_OMARCHY=0; export DOT_OMARCHY
+  mkmod a <<<'DESC=a'
+  doti $'~/code\n2\n\n\n' setup; assert_ok
+  assert_line "$HOME/.config/dotfiles/env.sh" "export DOTS_PROJECT_ROOT='$HOME/code'"
+  [[ -d $HOME/code ]] || _fail "projects folder created"
+}
+
+test_projects_default_set_and_exported_to_hooks() {
+  dotx projects; assert_ok
+  assert_contains "$OUT" "$HOME/projects"
+  assert_contains "$OUT" "not set yet"
+  mkdir -p "$HOME/Projects"
+  dotx projects; assert_contains "$OUT" "$HOME/Projects"   # existing folder wins over the default
+  dotx projects "$T/my code"; assert_ok
+  dotx projects; assert_contains "$OUT" "$T/my code"
+  assert_contains "$OUT" "set in"
+  ( unset DOTS_PROJECT_ROOT; . "$HOME/.config/dotfiles/env.sh"; [[ $DOTS_PROJECT_ROOT == "$T/my code" ]] ) ||
+    _fail "env.sh must be sourceable sh"
+  dotx projects "$T/other"; assert_ok
+  assert_eq 1 "$(grep -c DOTS_PROJECT_ROOT "$HOME/.config/dotfiles/env.sh")" "replaced, not appended"
+  mkmod a <<<'DESC=a
+is_installed() { false; }
+setup() { echo "$DOTS_PROJECT_ROOT" >"$HOME/seen"; }'
+  dotx apply a --yes; assert_ok
+  assert_eq "$T/other" "$(cat "$HOME/seen")" "hooks see DOTS_PROJECT_ROOT"
 }
 
 test_setup_needs_a_terminal() {
@@ -98,6 +126,9 @@ test_install_with_repo_clones_and_points_to_setup() {
   assert_file "$T/df/modules/a/module.sh"
   assert_line "$HOME/.config/dotfiles/repo" "$T/df"
   assert_contains "$OUT" "dot setup"
+  OUT=$(DOT_SOURCE=$REPO bash "$REPO/install.sh" --projects "$T/pr" </dev/null 2>&1); RC=$?
+  assert_ok
+  assert_line "$HOME/.config/dotfiles/env.sh" "export DOTS_PROJECT_ROOT='$T/pr'"
   OUT=$(DOT_SOURCE=$REPO bash "$REPO/install.sh" --bogus 2>&1); RC=$?
   assert_rc_fail
 }
