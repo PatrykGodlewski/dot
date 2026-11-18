@@ -47,35 +47,76 @@ _ui_is_sep() { [[ ${1%%$'\t'*} == "$UI_SEP_MARK" ]]; }
 _ui_sep_line() { printf '%s── %s ──%s' "$C_DIM" "${1#*$'\t'}" "$C_RESET"; }
 
 # ui_choose_one "Header" item...   (items may include ui_sep headers)
+# Long lists (more than UI_SEARCH_MIN items, e.g. the main menu) can be searched:
+# with gum by typing to filter, with plain prompts by typing text instead of a
+# number (name or description, case-insensitive).
+UI_SEARCH_MIN=${UI_SEARCH_MIN:-8}
 ui_choose_one() {
   local h=$1; shift
-  local -a lines=() names=()
-  local it
+  local -a lines=() names=() descs=()
+  local it n=0
+  for it in "$@"; do _ui_is_sep "$it" || n=$((n + 1)); done
   if ui_gum; then
+    local -a cmd=(gum choose --header "$h" --height 25)
+    if ((n > UI_SEARCH_MIN)); then
+      cmd=(gum filter --header "$h" --height 25 --placeholder "Type to search…" --no-fuzzy-sort)
+    fi
     for it in "$@"; do
-      if _ui_is_sep "$it"; then lines+=("$(_ui_sep_line "$it")"); else lines+=("  $(_ui_line "$it")"); fi
+      if _ui_is_sep "$it"; then
+        if ((n > UI_SEARCH_MIN)); then lines+=("── ${it#*$'\t'} ──"); else lines+=("$(_ui_sep_line "$it")"); fi
+      else
+        lines+=("  $(_ui_line "$it")")
+      fi
     done
     local out
     while true; do
-      out=$(gum choose --header "$h" --height 25 "${lines[@]}") || return 1
-      [[ $out == *"── "* ]] || break # picked a header: ask again
+      out=$("${cmd[@]}" "${lines[@]}") || return 1
+      [[ -n $out && $out != *"── "* ]] && break # picked a header (or nothing): ask again
     done
     awk '{print $1}' <<<"$out"
     return
   fi
+  for it in "$@"; do
+    _ui_is_sep "$it" && continue
+    names+=("${it%%$'\t'*}")
+    if [[ $it == *$'\t'* ]]; then descs+=("${it#*$'\t'}"); else descs+=(''); fi
+  done
   printf '%s%s%s\n' "$C_BOLD" "$h" "$C_RESET" >&2
+  local i=0
   for it in "$@"; do
     if _ui_is_sep "$it"; then
       printf '  %s\n' "$(_ui_sep_line "$it")" >&2
     else
-      names+=("${it%%$'\t'*}")
-      printf '  %2d) %s\n' "${#names[@]}" "$(_ui_line "$it")" >&2
+      i=$((i + 1))
+      printf '  %2d) %s\n' "$i" "$(_ui_line "$it")" >&2
     fi
   done
-  local a
-  read -rp "Choose [1-${#names[@]}]: " a
-  [[ $a =~ ^[0-9]+$ && $a -ge 1 && $a -le ${#names[@]} ]] || return 1
-  printf '%s\n' "${names[a - 1]}"
+  local a prompt="Choose [1-${#names[@]}]"
+  ((n > UI_SEARCH_MIN)) && prompt+=" or type to search"
+  local -a hits
+  while true; do
+    read -rp "$prompt: " a || return 1
+    [[ -n $a ]] || return 1
+    if [[ $a =~ ^[0-9]+$ ]]; then
+      ((a >= 1 && a <= ${#names[@]})) || return 1
+      printf '%s\n' "${names[a - 1]}"
+      return 0
+    fi
+    ((n > UI_SEARCH_MIN)) || return 1
+    # search: an exact name wins, otherwise every name / description containing the text
+    hits=()
+    for i in "${!names[@]}"; do
+      [[ ${names[i],,} == "${a,,}" ]] && { printf '%s\n' "${names[i]}"; return 0; }
+      [[ ${names[i],,} == *"${a,,}"* || ${descs[i],,} == *"${a,,}"* ]] && hits+=("$i")
+    done
+    case ${#hits[@]} in
+      0) printf '  no match for "%s"\n' "$a" >&2 ;;
+      1) printf '%s\n' "${names[hits[0]]}"; return 0 ;;
+      *)
+        printf '  matches for "%s":\n' "$a" >&2
+        for i in "${hits[@]}"; do printf '  %2d) %s\n' $((i + 1)) "$(_ui_line "${names[i]}"$'\t'"${descs[i]}")" >&2; done ;;
+    esac
+  done
 }
 
 # ui_choose_many "Header" "preselected names (space separated)" item...

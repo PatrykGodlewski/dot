@@ -73,8 +73,10 @@ Then:
 
 ```bash
 dot configs    # copy / link the configs you pick (no packages)
-dot            # menu: configs, sync, Omarchy, presets, modules, …
+dot            # menu: configs, sync, Omarchy, presets, modules, … (type to search)
 ```
+
+The menu is searchable: type to filter it (with gum), or type a word instead of a number (plain prompts), e.g. `proj` or `folder` for the projects folder.
 
 Without gum, dot uses plain prompts; `dot bootstrap` installs your `core` module (gum and base tools).
 

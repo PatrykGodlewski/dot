@@ -193,3 +193,42 @@ test_ui_fallback_picker_toggles() {
     timeout 10 script -qec "bash $prog" /dev/null >/dev/null 2>&1
   assert_eq "c" "$(cat "$out")"
 }
+
+# a long list (searchable): items i1..i9, i5 described as "the folder"
+_ui_search_items() {
+  local i
+  for i in 1 2 3 4 5 6 7 8 9; do
+    if ((i == 5)); then printf 'i%s\tthe folder\n' "$i"; else printf 'i%s\tdesc %s\n' "$i" "$i"; fi
+  done
+}
+
+test_ui_choose_one_plain_search() {
+  load_libs
+  local -a items; mapfile -t items < <(_ui_search_items)
+  assert_eq i5 "$(DOT_FORCE_TTY=1 ui_choose_one H "${items[@]}" <<<'folder' 2>/dev/null)" "unique description match"
+  assert_eq i3 "$(DOT_FORCE_TTY=1 ui_choose_one H "${items[@]}" <<<'I3' 2>/dev/null)" "exact name, any case"
+  assert_eq i2 "$(DOT_FORCE_TTY=1 ui_choose_one H "${items[@]}" <<<'2' 2>/dev/null)" "numbers still work"
+  local out
+  out=$(DOT_FORCE_TTY=1 ui_choose_one H "${items[@]}" 2>&1 >/dev/null <<<$'zzz\ndesc\n7')
+  assert_contains "$out" 'no match for "zzz"'
+  assert_contains "$out" 'matches for "desc"'
+  assert_eq i7 "$(DOT_FORCE_TTY=1 ui_choose_one H "${items[@]}" <<<$'desc\n7' 2>/dev/null)" "pick from matches"
+  DOT_FORCE_TTY=1 ui_choose_one H "${items[@]}" <<<'' >/dev/null 2>&1 && _fail "empty input cancels"
+  # short lists aren't searchable: text cancels, as before
+  DOT_FORCE_TTY=1 ui_choose_one H $'a\tA' $'b\tB' <<<'a' >/dev/null 2>&1 && _fail "short list: text cancels"
+  return 0
+}
+
+test_ui_choose_one_uses_gum_filter_for_long_lists() {
+  load_libs
+  fake_cmd gum <<'EOF2'
+echo "$1" >>"$T/gum-cmds"
+for a in "$@"; do [[ $a == *i5* ]] && { echo "$a"; exit 0; }; done
+for a in "$@"; do [[ $a == *" b "* || $a == "  b"* ]] && { echo "$a"; exit 0; }; done
+EOF2
+  ui_gum() { true; }
+  local -a items; mapfile -t items < <(_ui_search_items)
+  assert_eq i5 "$(ui_choose_one H "${items[@]}")"
+  assert_eq b "$(ui_choose_one H $'a\tA' $'b\tB')"
+  assert_eq $'filter\nchoose' "$(cat "$T/gum-cmds")" "filter for long lists, choose for short"
+}

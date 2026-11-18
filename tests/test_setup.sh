@@ -132,3 +132,22 @@ test_install_with_repo_clones_and_points_to_setup() {
   OUT=$(DOT_SOURCE=$REPO bash "$REPO/install.sh" --bogus 2>&1); RC=$?
   assert_rc_fail
 }
+
+test_menu_sets_projects_folder() {
+  DOT_OMARCHY=0; export DOT_OMARCHY
+  mkmod a <<<'DESC=a'
+  doti '' menu
+  local pick quit
+  pick=$(sed -n 's/^ *\([0-9]*\)) projects .*/\1/p' <<<"$OUT")
+  quit=$(sed -n 's/^ *\([0-9]*\)) quit.*/\1/p' <<<"$OUT")
+  [[ -n $pick && -n $quit ]] || _fail "menu lists projects: $OUT"
+  doti "$pick"$'\n~/code\n'"$quit" menu; assert_ok
+  assert_line "$HOME/.config/dotfiles/env.sh" "export DOTS_PROJECT_ROOT='$HOME/code'"
+}
+
+test_menu_search_by_text() {
+  DOT_OMARCHY=0; export DOT_OMARCHY
+  mkmod a <<<'DESC=a'
+  doti $'folder\n~/code\nquit' menu; assert_ok   # "folder" finds projects; "quit" by name
+  assert_line "$HOME/.config/dotfiles/env.sh" "export DOTS_PROJECT_ROOT='$HOME/code'"
+}

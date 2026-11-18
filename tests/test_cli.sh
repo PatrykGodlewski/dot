@@ -380,7 +380,7 @@ test_menu_returns_without_asking_and_survives_failures() {
   assert_not_contains "$OUT" ") ---"
   # normal flow: configs → remove → nothing to do → straight back to the menu
   mkhome a .zshrc
-  doti $'1\n3\n16' menu; assert_ok  # 16 = quit
+  doti $'1\n3\n17' menu; assert_ok  # 17 = quit
   assert_contains "$OUT" "Nothing to do"
   assert_eq 2 "$(grep -c '^dot — ' <<<"$OUT")" "menu shown again right after the command"
 }

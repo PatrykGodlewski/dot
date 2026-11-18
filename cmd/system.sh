@@ -120,6 +120,7 @@ cmd_menu() {
       "new"$'\t'"Create a new module" \
       "adopt"$'\t'"Move an existing config into a module" \
       "$(ui_sep "dot")" \
+      "projects"$'\t'"Projects folder: $(pretty "$(projects_root)")  (\$DOTS_PROJECT_ROOT)" \
       "doctor"$'\t'"Check the environment" \
       "self-update"$'\t'"Install the latest dot" \
       "quit"$'\t'"") || break
@@ -130,6 +131,9 @@ cmd_menu() {
       if [[ $choice == adopt ]]; then
         p=$(ui_input "Path to adopt (e.g. ~/.config/foo)")
         [[ -z $p ]] || cmd_adopt "${p/#\~/$HOME}"
+      elif [[ $choice == projects ]]; then
+        p=$(ui_input "Projects folder" "$(pretty "$(projects_root)")")
+        [[ -z $p ]] || projects_set "$p"
       else
         "cmd_${choice//-/_}"
       fi
